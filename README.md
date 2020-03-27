@@ -22,6 +22,4 @@ A simple 1Msps single channel scope with the TFT display on the ESP32-TTGO.
   * Cursors
   * 2nd channel (probably lowering the frequency considerably)  
 
-![Sine](https://github.com/gustavollps/esp32TTGO_i2s_scope/blob/master/imgs/sine%20wave.jpeg)
-![Sine](https://github.com/gustavollps/esp32TTGO_i2s_scope/blob/master/imgs/sine%20zoomed.jpeg)
-![Sine](https://github.com/gustavollps/esp32TTGO_i2s_scope/blob/master/imgs/pwm.jpeg)
+![Sine](https://github.com/gustavollps/esp32TTGO_i2s_scope/blob/master/imgs/file.png)
