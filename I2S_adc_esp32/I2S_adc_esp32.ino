@@ -30,7 +30,7 @@ TFT_eSPI    tft = TFT_eSPI();         // Declare object "tft"
 
 TFT_eSprite spr = TFT_eSprite(&tft);  // Declare Sprite object "spr" with pointer to "tft" object
 
-Loop show(5);
+Loop adc(3);
 Loop screen(10);
 
 Button2 button_mode = Button2(BUTTON_1);
@@ -43,8 +43,9 @@ float max_v = 24575;
 float delta = max_v - min_v; //4095 = 12bits
 
 float v_div = 825;
-float s_div = 50;
+float s_div = 10;
 float offset = 0;
+float toffset = 0;
 uint8_t current_filter = 0;
 
 uint16_t i2s_buff[BUFF_SIZE];
@@ -59,7 +60,9 @@ void setup() {
   setup_screen();
 
   button_mode.setClickHandler(click);
+  button_mode.setLongClickHandler(click_long);
   button_set.setClickHandler(click);
+  button_set.setLongClickHandler(click_long);
 
 #ifdef DEBUG_BUF
   debug_buffer();
@@ -74,7 +77,7 @@ bool stop_change = false;
 
 void loop() {
   menu_handler();
-  if (show.ok()) {
+  if (adc.ok()) {
     if (!stop) {
       if (stop_change) {
         i2s_adc_enable(I2S_NUM_0);

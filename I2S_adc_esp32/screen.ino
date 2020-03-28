@@ -53,6 +53,9 @@ void update_screen() {
 
   float freq = 0;
   bool signal_side = false;
+  uint32_t trigger_count = 0;
+  uint32_t trigger_temp[2] = {0};
+  uint32_t trigger_index = 0;
 
   //get initial signal relative to the mean
   if (to_voltage(i2s_buff[0]) > mean) {
@@ -62,15 +65,29 @@ void update_screen() {
   //frequency calculation + trigger set
   //
   for (uint32_t i = 1 ; i < BUFF_SIZE; i++) {
-    if (signal_side && to_voltage(i2s_buff[i]) < mean - (mean - to_voltage(min_v)) * 0.3) {
+    if (signal_side && to_voltage(i2s_buff[i]) < mean - (mean - to_voltage(min_v)) * 0.2) {
       signal_side = false;
     }
-    else if (!signal_side && to_voltage(i2s_buff[i]) > mean + (to_voltage(max_v) - mean) * 0.3) {
+    else if (!signal_side && to_voltage(i2s_buff[i]) > mean + (to_voltage(max_v) - mean) * 0.2) {
       freq++;
+      if (trigger_count < 2) {
+        trigger_count++;
+        if (trigger_count == 0)
+          trigger_temp[0] = i;
+        else
+          trigger_temp[1] = i;
+      }
       signal_side = true;
     }
   }
   freq = freq * 1000 / 50;
+  float period = 1000000.0 / freq; //us
+  if (trigger_temp[0] - period * 0.05 > 0)
+    trigger_index = trigger_temp[0] - period * 0.05;
+  else {
+    trigger_index = trigger_temp[1] - period * 0.05;
+  }
+  //  spr.drawString(String(trigger_temp[0]) + String(trigger_temp[1]) + String(period), 50, 50);
 
   String frequency = "";
   if (freq < 1000)
@@ -95,15 +112,23 @@ void update_screen() {
     str_filter = "Lpass9";
 
   String str_stop = "";
-  if (stop)
-    str_stop = "RUN";
+  if (!stop)
+    str_stop = "RUNNING";
   else
-    str_stop = "STOP";
+    str_stop = "STOPPED";
 
 
   draw_grid();
 
-  draw_channel1();
+  if(auto_scale){
+    auto_scale = false;
+    v_div = 1000.0*to_voltage(max_v)/4.0;    
+    s_div = period/3.5;
+    if(s_div > 5000)
+      s_div = 5000;
+    
+  }
+  draw_channel1(trigger_index);
 
   int shift = 150;
   if (menu) {
@@ -112,12 +137,14 @@ void update_screen() {
     spr.drawRect(shift, 0, 240, 135, TFT_WHITE);
     spr.fillRect(shift + 1, 3 + 10 * (opt - 1), 100, 11, TFT_RED);
 
-    spr.drawString(String(int(v_div)) + "mV/div",  shift + 5, 5);
-    spr.drawString(String(int(s_div)) + "uS/div",  shift + 5, 15);
-    spr.drawString("Offset: " + String(offset) + "V",  shift + 5, 25);
-    spr.drawString("Filter: " + str_filter, shift + 5, 35);
-    spr.drawString("Stop: " + str_stop, shift + 5, 45);
-    spr.drawString("----RESET----", shift + 5, 55);
+    spr.drawString("AUTOSCALE",  shift + 5, 5);
+    spr.drawString(String(int(v_div)) + "mV/div",  shift + 5, 15);
+    spr.drawString(String(int(s_div)) + "uS/div",  shift + 5, 25);
+    spr.drawString("Offset: " + String(offset) + "V",  shift + 5, 35);
+    spr.drawString("T-Off: " + String((uint32_t)toffset) + "uS",  shift + 5, 45);
+    spr.drawString("Filter: " + str_filter, shift + 5, 55);
+    spr.drawString(str_stop, shift + 5, 65);
+    spr.drawString("----RESET----", shift + 5, 75);
 
     spr.drawString("Vmax: " + String(to_voltage(max_v)) + "V",  shift + 5, 85);
     spr.drawString("Vmin: " + String(to_voltage(min_v)) + "V",  shift + 5, 95);
@@ -139,7 +166,7 @@ void update_screen() {
     Serial.println(float(i2s_buff[i] - min_v) / delta * 3.3);
   }
 #endif
-  Serial.println("ALIVE!");
+  //Serial.println("ALIVE!");
   yield(); // Stop watchdog reset
 }
 
@@ -158,19 +185,21 @@ void draw_grid() {
   }
 }
 
-void draw_channel1() {
+void draw_channel1(uint32_t trigger) {
   //screen wave drawing
   data[0] = to_scale(i2s_buff[0]);
   low_pass filter(0.99);
   mean_filter mfilter(5);
-  mfilter.init(i2s_buff[0]);
-  filter._value = i2s_buff[0];
-  float data_per_pixel = (s_div / 34.0) / (sample_rate/1000);
+  mfilter.init(i2s_buff[trigger]);
+  filter._value = i2s_buff[trigger];
+  float data_per_pixel = (s_div / 34.0) / (sample_rate / 1000);
+  uint32_t index_offset = (uint32_t)(toffset / data_per_pixel);
+  trigger += index_offset;
   uint32_t total_data_points = (int)(240.0 * data_per_pixel);
   uint32_t old_index = 0;
-  float n_data = 0, o_data = to_scale(i2s_buff[0]);
+  float n_data = 0, o_data = to_scale(i2s_buff[trigger]);
   for (uint32_t i = 1; i < 240; i++) {
-    uint32_t index = (uint32_t)((i + 1) * data_per_pixel);
+    uint32_t index = trigger + (uint32_t)((i + 1) * data_per_pixel);
     if (index < BUFF_SIZE) {
 #ifdef FULL_PX
       for (int j = old_index; j < index; j++) {
@@ -195,6 +224,9 @@ void draw_channel1() {
       spr.drawLine(i - 1, o_data, i, n_data, TFT_BLUE);
       o_data = n_data;
 #endif
+    }
+    else {
+      break;
     }
     old_index = index;
   }
