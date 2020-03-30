@@ -1,25 +1,21 @@
-# esp32TTGO_i2s_scope
+esp32TTGO_i2s_scope
+====================
 A simple 1Msps single channel scope with the TFT display on the ESP32-TTGO.
 
-* Features v0.1
-  * 1Msps max
-  * 50000 16bits buffer (50ms of data at 1Msps)
+* Features v0.3
+  * Single-channel
+  * 1Msps
+  * 50000 @ 16bits buffer (50ms of data at 1Msps)
   * Scale from 10us/div to 5ms/div at 1Msps
-  * Using 2 onboard buttons for control
-  * Frequency calculations (20hz resolution at 1Msps)
+  * Using 2 onboard buttons for VERY slow control (dreaming of a rotational encoder)
+  * Frequency calculations (20hz min due to buffer size)
   * Simple mean filter ON/OFF
   * Max, min, average and Peak-Peak voltage
+  * Positive Time and voltage offset
 
-* TODO
-  * Code commenting and structuring (not very reader-friendly right now)
-  * Trigger features
-  * Time offset
-  * Fix unfunctional low-pass filter
-  * Scale from 10ms/div to 50ms/div at 100ksps
-  * Scale from 100ms/div to 5ms/div at 1Msps
-  * External circuit/voltage divider to read negative/higher voltages
-  * Probe configuration menu
-  * Cursors
-  * 2nd channel (probably lowering the frequency considerably)  
 
-![Sine](https://github.com/gustavollps/esp32TTGO_i2s_scope/blob/master/imgs/file.png)
+Version history
+-----------------
+* v0.1 simple bugged scope
+* v0.2 Trigger added
+* v0.3 Frequency calculation improved, trigger improved, overall improvements
