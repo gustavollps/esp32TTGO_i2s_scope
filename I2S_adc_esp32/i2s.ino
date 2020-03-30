@@ -23,10 +23,9 @@ void configure_i2s(uint32_t rate) {
   i2s_adc_enable(I2S_NUM_0);
 }
 
-void load_buffer(){
+void ADC_Sampling(uint16_t *i2s_buff){
   for (int i = 0; i < B_MULT; i++) {
-    i2s_read_bytes(I2S_NUM_0, (char*)&i2s_buff[i * NUM_SAMPLES],  NUM_SAMPLES * sizeof(uint16_t), portMAX_DELAY);
-    //i2s_read_bytes(I2S_NUM_0, (char*)i2s_read_buff,  NUM_SAMPLES * sizeof(uint16_t), portMAX_DELAY);
+    i2s_read_bytes(I2S_NUM_0, (char*)&i2s_buff[i * NUM_SAMPLES],  NUM_SAMPLES * sizeof(uint16_t), portMAX_DELAY);    
   }
 }
 

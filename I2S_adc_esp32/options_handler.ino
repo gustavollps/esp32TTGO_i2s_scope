@@ -1,19 +1,3 @@
-enum Option {
-  None,
-  Autoscale,
-  Vdiv,
-  Sdiv,
-  Offset,
-  TOffset,
-  Filter,
-  Stop,
-  Reset,
-  Probe,
-  UpdateF,
-  Cursor1,
-  Cursor2
-};
-
 int voltage_division[6] = { //screen has 4 divisions, 31 pixels each (125 pixels of height)
   825, //fullscreen 3.3V peak-peak
   750,
@@ -44,18 +28,6 @@ float time_division[13] = { //screen has 4 divisions, 60 pixel each (240 pixel o
   100000  //50khz   700ms/1000ms of data
 };
 
-uint8_t volts_index = 0;
-
-uint8_t tscale_index = 0;
-
-uint8_t opt = None;
-
-bool menu = false;
-
-float sample_rate = 1000; //in ksps --> 1000 = 1Msps
-
-bool auto_scale = false;
-
 void menu_handler() {
   /* set V/div
      set S/div
@@ -84,6 +56,9 @@ void click_long(Button2& btn) {
         case Sdiv:
           s_div = 10;
           tscale_index = 0;
+          break;
+        case Offset:
+          offset = 0;
           break;
         case TOffset:
           toffset = 0;
@@ -181,7 +156,7 @@ void click(Button2& btn) {
 
       case Filter:
         current_filter++;
-        if (current_filter > 2)
+        if (current_filter > 3)
           current_filter = 0;
         break;
 

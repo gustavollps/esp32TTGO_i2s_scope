@@ -36,58 +36,24 @@ float to_voltage(float reading) {
   return  (reading - min_v) / delta * 3.3;
 }
 
-void update_screen() {
+void update_screen(uint16_t *i2s_buff) {
   // Fill the whole sprite with black (Sprite is in memory so not visible yet)
   spr.fillSprite(TFT_BLACK);
 
-  //data mean calculation
+
   float mean = 0;
-  for (int i = 0; i < NUM_SAMPLES; i++) {
-    mean += i2s_buff[i];
-  }
-  mean /= float(NUM_SAMPLES);
-  mean = to_voltage(mean);
+  mean = mean_calc(i2s_buff);
+
   float max_v, min_v;
-  peak_peak(i2s_buff, NUM_SAMPLES, &max_v, &min_v);
+  peak_peak(i2s_buff, BUFF_SIZE, &max_v, &min_v);
   float peak = to_voltage(max_v) - to_voltage(min_v);
 
   float freq = 0;
-  bool signal_side = false;
-  uint32_t trigger_count = 0;
-  uint32_t trigger_temp[2] = {0};
-  uint32_t trigger_index = 0;
+  float period = 0;
+  uint32_t trigger0 = 0;
+  uint32_t trigger1 = 0;
 
-  //get initial signal relative to the mean
-  if (to_voltage(i2s_buff[0]) > mean) {
-    signal_side = true;
-  }
-
-  //frequency calculation + trigger set
-  //
-  for (uint32_t i = 1 ; i < BUFF_SIZE; i++) {
-    if (signal_side && to_voltage(i2s_buff[i]) < mean - (mean - to_voltage(min_v)) * 0.2) {
-      signal_side = false;
-    }
-    else if (!signal_side && to_voltage(i2s_buff[i]) > mean + (to_voltage(max_v) - mean) * 0.2) {
-      freq++;
-      if (trigger_count < 2) {
-        trigger_count++;
-        if (trigger_count == 0)
-          trigger_temp[0] = i;
-        else
-          trigger_temp[1] = i;
-      }
-      signal_side = true;
-    }
-  }
-  freq = freq * 1000 / 50;
-  float period = 1000000.0 / freq; //us
-  if (trigger_temp[0] - period * 0.05 > 0)
-    trigger_index = trigger_temp[0] - period * 0.05;
-  else {
-    trigger_index = trigger_temp[1] - period * 0.05;
-  }
-  //  spr.drawString(String(trigger_temp[0]) + String(trigger_temp[1]) + String(period), 50, 50);
+  trigger_freq_calc(i2s_buff, mean, &freq, &period, &trigger0, &trigger1);
 
   String frequency = "";
   if (freq < 1000)
@@ -107,8 +73,10 @@ void update_screen() {
   if (current_filter == 0)
     str_filter = "None";
   else if (current_filter == 1)
+    str_filter = "Pixel";
+  else if (current_filter == 2)
     str_filter = "Mean-5";
-  else
+  else if (current_filter == 3)
     str_filter = "Lpass9";
 
   String str_stop = "";
@@ -120,15 +88,15 @@ void update_screen() {
 
   draw_grid();
 
-  if(auto_scale){
+  if (auto_scale) {
     auto_scale = false;
-    v_div = 1000.0*to_voltage(max_v)/4.0;    
-    s_div = period/3.5;
-    if(s_div > 5000)
+    v_div = 1000.0 * to_voltage(max_v) / 4.0;
+    s_div = period / 3.5;
+    if (s_div > 5000)
       s_div = 5000;
-    
+
   }
-  draw_channel1(trigger_index);
+  draw_channel1(trigger0, trigger1, i2s_buff);
 
   int shift = 150;
   if (menu) {
@@ -185,75 +153,55 @@ void draw_grid() {
   }
 }
 
-void draw_channel1(uint32_t trigger) {
+void draw_channel1(uint32_t trigger0, uint32_t trigger1, uint16_t *i2s_buff) {
   //screen wave drawing
-  data[0] = to_scale(i2s_buff[0]);
+  data[0] = to_scale(i2s_buff[trigger0]);
   low_pass filter(0.99);
   mean_filter mfilter(5);
-  mfilter.init(i2s_buff[trigger]);
-  filter._value = i2s_buff[trigger];
+  mfilter.init(i2s_buff[trigger0]);
+  filter._value = i2s_buff[trigger0];
   float data_per_pixel = (s_div / 34.0) / (sample_rate / 1000);
+
+  //  uint32_t cursor = (trigger1-trigger0)/data_per_pixel;
+  //  spr.drawLine(cursor, 0, cursor, 135, TFT_RED);
+
   uint32_t index_offset = (uint32_t)(toffset / data_per_pixel);
-  trigger += index_offset;
+  trigger0 += index_offset;
   uint32_t total_data_points = (int)(240.0 * data_per_pixel);
-  uint32_t old_index = 0;
-  float n_data = 0, o_data = to_scale(i2s_buff[trigger]);
+  uint32_t old_index = trigger0;
+  float n_data = 0, o_data = to_scale(i2s_buff[trigger0]);
   for (uint32_t i = 1; i < 240; i++) {
-    uint32_t index = trigger + (uint32_t)((i + 1) * data_per_pixel);
+    uint32_t index = trigger0 + (uint32_t)((i + 1) * data_per_pixel);
     if (index < BUFF_SIZE) {
-#ifdef FULL_PX
-      for (int j = old_index; j < index; j++) {
-        //draw lines for all this data points on pixel i
-        if (current_filter == 0)
-          n_data = to_scale(i2s_buff[j]);
-        else if (current_filter == 1)
-          n_data = to_scale(mfilter.filter((float)i2s_buff[j]));
+      if (full_pix && s_div > 34 && current_filter == 0) {
+        uint32_t max_val = i2s_buff[old_index];
+        uint32_t min_val = i2s_buff[old_index];
+        for (int j = old_index; j < index; j++) {
+          //draw lines for all this data points on pixel i
+          if (i2s_buff[j] > max_val)
+            max_val = i2s_buff[j];
+          else if (i2s_buff[j] < min_val)
+            min_val = i2s_buff[j];
+
+        }
+        spr.drawLine(i, to_scale(min_val), i, to_scale(max_val), TFT_BLUE);
+      }
+      else {        
+        if (current_filter == 2)
+          n_data = to_scale(mfilter.filter((float)i2s_buff[index]));
+        else if (current_filter == 3)
+          n_data = to_scale(filter.filter((float)i2s_buff[index]));
         else
-          n_data = to_scale(filter.filter((float)i2s_buff[j]));
+          n_data = to_scale(i2s_buff[index]);
+          
         spr.drawLine(i - 1, o_data, i, n_data, TFT_BLUE);
         o_data = n_data;
       }
-#else
-      uint32_t j = index;
-      if (current_filter == 0)
-        n_data = to_scale(i2s_buff[j]);
-      else if (current_filter == 1)
-        n_data = to_scale(mfilter.filter((float)i2s_buff[j]));
-      else
-        n_data = to_scale(filter.filter((float)i2s_buff[j]));
-      spr.drawLine(i - 1, o_data, i, n_data, TFT_BLUE);
-      o_data = n_data;
-#endif
+
     }
     else {
       break;
     }
     old_index = index;
-  }
-  //  for (int i = 1; i < 240; i++) {
-  //    if (current_filter == 0)
-  //      data[i] = to_scale(i2s_buff[i]);
-  //    else if (current_filter == 1)
-  //      data[i] = to_scale(mfilter.filter((float)i2s_buff[i]));
-  //    else
-  //      data[i] = to_scale(filter.filter((float)i2s_buff[i]));
-  //
-  //    spr.drawLine(i - 1, data[i - 1], i, data[i], TFT_BLUE);
-  //    //spr.drawLine(i+3, to_scale(i2s_buff[i - 1]), i+4, to_scale(i2s_buff[i]), TFT_RED);
-  //  }
-}
-
-void peak_peak(uint16_t *vector, uint32_t len, float * max_value, float * min_value) {
-  max_value[0] = vector[0];
-  min_value[0] = vector[0];
-  mean_filter filter(5);
-  filter.init(vector[0]);
-
-  for (uint32_t i = 1; i < len; i++) {
-    float value = filter.filter((float)vector[i]);
-    if (value > max_value[0])
-      max_value[0] = value;
-    if (value < min_value[0])
-      min_value[0] = value;
   }
 }

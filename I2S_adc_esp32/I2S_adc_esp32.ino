@@ -48,11 +48,42 @@ float offset = 0;
 float toffset = 0;
 uint8_t current_filter = 0;
 
-uint16_t i2s_buff[BUFF_SIZE];
+//options handler
+enum Option {
+  None,
+  Autoscale,
+  Vdiv,
+  Sdiv,
+  Offset,
+  TOffset,
+  Filter,
+  Stop,
+  Reset,
+  Probe,
+  UpdateF,
+  Cursor1,
+  Cursor2
+};
+
+uint8_t volts_index = 0;
+
+uint8_t tscale_index = 0;
+
+uint8_t opt = None;
+
+bool menu = false;
+
+float sample_rate = 1000; //in ksps --> 1000 = 1Msps
+
+bool auto_scale = false;
+
+bool full_pix = true;
+//-----------------------
+
+
 bool stop = false;
 
-void setup() {
-
+void setup() {  
   Serial.begin(115200);
 
   configure_i2s(1000000);
@@ -69,13 +100,12 @@ void setup() {
 #endif
 }
 
-static const inline void ADC_Sampling() {
-  load_buffer();
-}
-
 bool stop_change = false;
 
-void loop() {
+uint16_t i2s_buff[BUFF_SIZE]; 
+
+void loop() { 
+  //uint16_t *pointer = (uint16_t*)malloc(20000 * sizeof(uint16_t));
   menu_handler();
   if (adc.ok()) {
     if (!stop) {
@@ -83,7 +113,7 @@ void loop() {
         i2s_adc_enable(I2S_NUM_0);
         stop_change = false;
       }
-      ADC_Sampling();
+      ADC_Sampling(i2s_buff);      
     }
     else {
       if (!stop_change) {
@@ -92,8 +122,12 @@ void loop() {
         stop_change = true;
       }
     }
-  }
-  if (screen.ok()) {
-    update_screen();
+//    if(pointer == NULL)
+//      Serial.println("FAIL malloc");
+//    free(pointer);
+//    Serial.println(ESP.getFreeHeap());
+  }  
+  if(screen.ok()){
+    update_screen(i2s_buff);
   }
 }
