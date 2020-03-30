@@ -64,7 +64,7 @@ void click_long(Button2& btn) {
           toffset = 0;
           break;
         case Filter:
-          current_filter = 0;
+          current_filter = 1;
           break;
         default:
           break;

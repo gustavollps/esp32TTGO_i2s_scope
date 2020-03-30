@@ -46,7 +46,7 @@ float v_div = 825;
 float s_div = 10;
 float offset = 0;
 float toffset = 0;
-uint8_t current_filter = 0;
+uint8_t current_filter = 1;
 
 //options handler
 enum Option {
