@@ -20,7 +20,7 @@ float to_scale(float reading) {
                (
                  (
                    (
-                     ((reading - min_v) / delta)
+                     (float)((reading - 20480.0) / 4095.0)
                      + (offset / 3.3)
                    )
                    * 3300 /
@@ -33,27 +33,61 @@ float to_scale(float reading) {
 }
 
 float to_voltage(float reading) {
-  return  (reading - min_v) / delta * 3.3;
+  return  (reading - 20480.0) / 4095.0 * 3.3;
 }
 
-void update_screen(uint16_t *i2s_buff) {
-  // Fill the whole sprite with black (Sprite is in memory so not visible yet)
-  spr.fillSprite(TFT_BLACK);
+uint32_t from_voltage(float voltage) {
+  return uint32_t(voltage / 3.3 * 4095 + 20480.0);
+}
 
+void update_screen(uint16_t *i2s_buff, float sample_rate) {
 
   float mean = 0;
-  mean = mean_calc(i2s_buff);
-
   float max_v, min_v;
-  peak_peak(i2s_buff, BUFF_SIZE, &max_v, &min_v);
-  float peak = to_voltage(max_v) - to_voltage(min_v);
+
+  peak_mean(i2s_buff, BUFF_SIZE, &max_v, &min_v, &mean);
+
+  float peak = max_v - min_v;
 
   float freq = 0;
   float period = 0;
   uint32_t trigger0 = 0;
   uint32_t trigger1 = 0;
 
-  trigger_freq_calc(i2s_buff, mean, &freq, &period, &trigger0, &trigger1);
+  //if analog mode OR auto mode and wave recognized as analog
+  bool digital_data = false;
+  if (digital_wave_option == 1) {
+    trigger_freq_analog(i2s_buff, sample_rate, mean, max_v, min_v, &freq, &period, &trigger0, &trigger1);
+  }
+  else if (digital_wave_option == 0) {
+    digital_data = digital_analog(i2s_buff, max_v, min_v);
+    if (!digital_data) {
+      trigger_freq_analog(i2s_buff, sample_rate, mean, max_v, min_v, &freq, &period, &trigger0, &trigger1);
+    }
+    else {
+      trigger_freq_digital(i2s_buff, sample_rate, mean, max_v, min_v, &freq, &period, &trigger0);
+    }
+  }
+  else {
+    trigger_freq_digital(i2s_buff, sample_rate, mean, max_v, min_v, &freq, &period, &trigger0);
+  }
+
+  draw_sprite(freq, period, mean, max_v, min_v, trigger0, sample_rate, digital_data, true);
+}
+
+void draw_sprite(float freq,
+                 float period,
+                 float mean,
+                 float max_v,
+                 float min_v,
+                 uint32_t trigger,
+                 float sample_rate,
+                 bool digital_data,
+                 bool new_data
+                ) {
+
+  max_v = to_voltage(max_v);
+  min_v = to_voltage(min_v);
 
   String frequency = "";
   if (freq < 1000)
@@ -85,22 +119,42 @@ void update_screen(uint16_t *i2s_buff) {
   else
     str_stop = "STOPPED";
 
+  String wave_option = "";
+  if (digital_wave_option == 0)
+    if (digital_data )
+      wave_option = "AUTO:Dig./data";
+    else
+      wave_option = "AUTO:Analog";
+  else if (digital_wave_option == 1)
+    wave_option = "MODE:Analog";
+  else
+    wave_option = "MODE:Dig./data";
 
-  draw_grid();
 
-  if (auto_scale) {
-    auto_scale = false;
-    v_div = 1000.0 * to_voltage(max_v) / 4.0;
-    s_div = period / 3.5;
-    if (s_div > 5000)
-      s_div = 5000;
+  if (new_data) {
+    // Fill the whole sprite with black (Sprite is in memory so not visible yet)
+    spr.fillSprite(TFT_BLACK);
 
+    draw_grid();
+
+    if (auto_scale) {
+      auto_scale = false;
+      v_div = 1000.0 * max_v / 4.0;
+      s_div = period / 3.5;
+      if (s_div > 7000 || s_div <= 0)
+        s_div = 7000;
+      if (v_div <= 0)
+        v_div = 825;
+    }
+
+    //only draw digital data if a trigger was in the data
+    if (!(digital_wave_option == 2 && trigger == 0))
+      draw_channel1(trigger, 0, i2s_buff, sample_rate);
   }
-  draw_channel1(trigger0, trigger1, i2s_buff);
 
   int shift = 150;
   if (menu) {
-
+    spr.drawLine( 0, 67, 240, 67, TFT_WHITE); //center line
     spr.fillRect(shift, 0, 240, 135, TFT_BLACK);
     spr.drawRect(shift, 0, 240, 135, TFT_WHITE);
     spr.fillRect(shift + 1, 3 + 10 * (opt - 1), 100, 11, TFT_RED);
@@ -112,38 +166,57 @@ void update_screen(uint16_t *i2s_buff) {
     spr.drawString("T-Off: " + String((uint32_t)toffset) + "uS",  shift + 5, 45);
     spr.drawString("Filter: " + str_filter, shift + 5, 55);
     spr.drawString(str_stop, shift + 5, 65);
-    spr.drawString("----RESET----", shift + 5, 75);
+    spr.drawString(wave_option, shift + 5, 75);
+    spr.drawString("Single " + String(single_trigger ? "ON" : "OFF"), shift + 5, 85);
 
-    spr.drawString("Vmax: " + String(to_voltage(max_v)) + "V",  shift + 5, 85);
-    spr.drawString("Vmin: " + String(to_voltage(min_v)) + "V",  shift + 5, 95);
-    spr.drawString("P-P: " + String(peak) + "V",  shift + 5, 105);
-    spr.drawString(s_mean,  shift + 5, 115);
-    spr.drawString(frequency,  shift + 5, 125);
+    spr.drawLine(shift, 103, shift + 100, 103, TFT_WHITE);
+
+    spr.drawString("Vmax: " + String(max_v) + "V",  shift + 5, 105);
+    spr.drawString("Vmin: " + String(min_v) + "V",  shift + 5, 115);
+    spr.drawString(s_mean,  shift + 5, 125);
+
+    shift -= 70;
+
+    //spr.fillRect(shift, 0, 70, 30, TFT_BLACK);
+    spr.drawRect(shift, 0, 70, 30, TFT_WHITE);
+    spr.drawString("P-P: " + String(max_v - min_v) + "V",  shift + 5, 5);
+    spr.drawString(frequency,  shift + 5, 15);
+    String offset_line = String((2.0 * v_div) / 1000.0 - offset) + "V";
+    spr.drawString(offset_line,  shift + 40, 59);
+
+    if (set_value) {
+      spr.fillRect(229, 0, 11, 11, TFT_BLUE);
+      spr.drawRect(229, 0, 11, 11, TFT_WHITE);
+      spr.drawLine(231, 5, 238 , 5, TFT_WHITE);
+      spr.drawLine(234, 2, 234, 8, TFT_WHITE);
+
+
+      spr.fillRect(229, 124, 11, 11, TFT_BLUE);
+      spr.drawRect(229, 124, 11, 11, TFT_WHITE);
+      spr.drawLine(231, 129, 238, 129, TFT_WHITE);
+    }
   }
-  //  else {
-  //    spr.fillRect(shift, 0, 240 - shift, 30, TFT_BLACK);
-  //    spr.drawRect(shift, 0, 240 - shift, 30, TFT_WHITE);
-  //  }
+  else if (info) {
+    spr.drawLine( 0, 67, 240, 67, TFT_WHITE); //center line
+    spr.drawRect(shift + 10, 0, 240 - shift - 10, 30, TFT_WHITE);
+    spr.drawString("P-P: " + String(max_v - min_v) + "V",  shift + 15, 5);
+    spr.drawString(frequency,  shift + 15, 15);
+    String offset_line = String((2.0 * v_div) / 1000.0 - offset) + "V";
+    spr.drawString(offset_line,  shift + 60, 59);
+  }
 
 
   //push the drawed sprite to the screen
   spr.pushSprite(0, 0);
 
-#ifdef DEBUG_SERIAL
-  for (int i = 0; i < NUM_SAMPLES; i++) {
-    Serial.println(float(i2s_buff[i] - min_v) / delta * 3.3);
-  }
-#endif
-  //Serial.println("ALIVE!");
   yield(); // Stop watchdog reset
 }
 
 void draw_grid() {
-  //axis drawing
-  //spr.drawLine(10, 0, 10, 240, TFT_WHITE);
-  spr.drawLine( 0, 67, 240, 67, TFT_WHITE); //center line
+
   for (int i = 0; i < 24; i++) {
     spr.drawPixel(i * 10, 33, TFT_WHITE);
+    spr.drawPixel(i * 10, 67, TFT_WHITE);
     spr.drawPixel(i * 10, 101, TFT_WHITE);
   }
   for (int i = 0; i < 135; i += 10) {
@@ -153,7 +226,7 @@ void draw_grid() {
   }
 }
 
-void draw_channel1(uint32_t trigger0, uint32_t trigger1, uint16_t *i2s_buff) {
+void draw_channel1(uint32_t trigger0, uint32_t trigger1, uint16_t *i2s_buff, float sample_rate) {
   //screen wave drawing
   data[0] = to_scale(i2s_buff[trigger0]);
   low_pass filter(0.99);
@@ -186,14 +259,14 @@ void draw_channel1(uint32_t trigger0, uint32_t trigger1, uint16_t *i2s_buff) {
         }
         spr.drawLine(i, to_scale(min_val), i, to_scale(max_val), TFT_BLUE);
       }
-      else {        
+      else {
         if (current_filter == 2)
           n_data = to_scale(mfilter.filter((float)i2s_buff[index]));
         else if (current_filter == 3)
           n_data = to_scale(filter.filter((float)i2s_buff[index]));
         else
           n_data = to_scale(i2s_buff[index]);
-          
+
         spr.drawLine(i - 1, o_data, i, n_data, TFT_BLUE);
         o_data = n_data;
       }
