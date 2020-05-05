@@ -11,8 +11,18 @@ A simple 1Msps single channel scope with the TFT display on the ESP32-TTGO.
   * Frequency calculations (20hz min due to buffer size)
   * Simple mean filter ON/OFF
   * Max, min, average and Peak-Peak voltage
-  * Positive Time and voltage offset
+  * Time and voltage offset
+  * Analog, Digital/Data Mode
+  * Single TRIGGER
 
+Tested and working on:
+* PWM
+* 80Khz sine wave
+* 40hz sine wave
+* Serial at 115200bps
+* Electric Guitar Raw singal (from 82hz to 1.3khz, <100mV peak to peak)
+
+**KEEP IN MIND TO PROTECT YOUR ADC PORT**
 
 Version history
 -----------------
