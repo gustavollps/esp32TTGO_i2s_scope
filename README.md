@@ -5,7 +5,7 @@ esp32TTGO_i2s_scope
 Fell free to give me any sugestions, it is a simple work that supplied what I needed at the time and it has much to improve.
 
 
-A simple 1Msps single channel scope with the TFT display on the ESP32-TTGO.
+A simple 1Msps single channel scope with the TFT display on the ESP32-TTGO.(https://bit.ly/2WbaXDi)
 
 * Features v0.3
   * Single-channel
