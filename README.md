@@ -34,3 +34,5 @@ Version history
 * v0.1 simple bugged scope
 * v0.2 Trigger added
 * v0.3 Frequency calculation improved, trigger improved, overall improvements
+
+![scope](https://github.com/gustavollps/esp32TTGO_i2s_scope/blob/master/imgs/P_20200508_000602_vHDR_On.jpg)
