@@ -1,6 +1,6 @@
 esp32TTGO_i2s_scope
 ====================
-[DEMO VIDEO COMMING SOON]
+DEMO VIDEO at https://youtu.be/4NNk67PA57Y
 
 Fell free to give me any sugestions, it is a simple work that supplied what I needed at the time and it has much to improve.
 
