@@ -2,7 +2,7 @@ esp32TTGO_i2s_scope
 ====================
 DEMO VIDEO at https://youtu.be/4NNk67PA57Y
 
-Fell free to give me any sugestions, it is a simple work that supplied what I needed at the time and it has much to improve.
+Feel free to give me any sugestions, it is a simple work that supplied what I needed at the time and it has much room to improve.
 
 
 A simple 1Msps single channel scope with the TFT display on the ESP32-TTGO.(https://bit.ly/2WbaXDi)
@@ -19,6 +19,7 @@ A simple 1Msps single channel scope with the TFT display on the ESP32-TTGO.(http
   * Time and voltage offset
   * Analog, Digital/Data Mode
   * Single TRIGGER
+  * AUTOSCALE
 
 Tested and working on:
 * PWM
