@@ -52,7 +52,7 @@ With this, you should be able to build it successfully.
 
 Based on long (>500ms clicks) and short clicks. The buttons do not work so well, probably due to the processing loops taking too much time and don't letting the loop() function of the button2 library get the correct pressed time. 
 
-You can change the `#define LONGCLICK_MS 500` to the desired value after experiencing how bad it is.
+You can change the `#define LONGCLICK_MS 500` to the desired value after experiencing how bad it is. There are also other options for debounce time, long_click, etc, inside the library that may help. You can also use interrupts to improve the operability.
 
 The DEMO video shows better the working flow.
 
