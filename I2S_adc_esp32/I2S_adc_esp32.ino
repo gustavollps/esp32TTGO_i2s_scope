@@ -4,9 +4,11 @@
 #include <soc/syscon_reg.h>
 #include <TFT_eSPI.h>
 #include <SPI.h>
-#include <Button2.h>
 #include "esp_adc_cal.h"
 #include "filters.h"
+
+#define LONGCLICK_MS 1000
+#include <Button2.h>
 
 //#define DEBUG_SERIAL
 //#define DEBUG_BUFF
