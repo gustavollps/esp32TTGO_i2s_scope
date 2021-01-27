@@ -25,6 +25,7 @@ void configure_i2s(int rate) {
 
 void ADC_Sampling(uint16_t *i2s_buff){
   for (int i = 0; i < B_MULT; i++) {
+    //TODO i2s_read_bytes is deprecated, replace with new function
     i2s_read_bytes(I2S_NUM_0, (char*)&i2s_buff[i * NUM_SAMPLES],  NUM_SAMPLES * sizeof(uint16_t), portMAX_DELAY);    
   }
 }

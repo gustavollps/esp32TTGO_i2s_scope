@@ -7,7 +7,7 @@
 #include "esp_adc_cal.h"
 #include "filters.h"
 
-#define LONGCLICK_MS 1500 
+#define LONGCLICK_MS 1500
 
 #include <Button2.h>
 
@@ -107,7 +107,7 @@ void setup() {
   button_mode.setLongClickHandler(click_long);
   button_set.setClickHandler(click);
   button_set.setLongClickHandler(click_long);
-  
+
   characterize_adc();
 #ifdef DEBUG_BUF
   debug_buffer();
