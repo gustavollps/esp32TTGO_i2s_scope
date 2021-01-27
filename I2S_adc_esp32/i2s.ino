@@ -1,4 +1,4 @@
-void configure_i2s(uint32_t rate) {
+void configure_i2s(int rate) {
   /*keep in mind:
      dma_buf_len * dma_buf_count * bits_per_sample/8 > 4096
   */

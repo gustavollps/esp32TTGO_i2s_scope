@@ -47,8 +47,6 @@ void update_screen(uint16_t *i2s_buff, float sample_rate) {
 
   peak_mean(i2s_buff, BUFF_SIZE, &max_v, &min_v, &mean);
 
-  float peak = max_v - min_v;
-
   float freq = 0;
   float period = 0;
   uint32_t trigger0 = 0;
@@ -239,8 +237,7 @@ void draw_channel1(uint32_t trigger0, uint32_t trigger1, uint16_t *i2s_buff, flo
   //  spr.drawLine(cursor, 0, cursor, 135, TFT_RED);
 
   uint32_t index_offset = (uint32_t)(toffset / data_per_pixel);
-  trigger0 += index_offset;
-  uint32_t total_data_points = (int)(240.0 * data_per_pixel);
+  trigger0 += index_offset;  
   uint32_t old_index = trigger0;
   float n_data = 0, o_data = to_scale(i2s_buff[trigger0]);
   for (uint32_t i = 1; i < 240; i++) {
