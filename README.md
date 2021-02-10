@@ -50,9 +50,16 @@ With this, you should be able to build it successfully.
 
 # Button Operation
 
-Based on long (>500ms clicks) and short clicks. The buttons do not work so well, probably due to the processing loops taking too much time and don't letting the loop() function of the button2 library get the correct pressed time. 
-
-You can change the `#define LONGCLICK_MS 500` to the desired value after experiencing how bad it is. There are also other options for debounce time, long_click, etc, inside the library that may help. You can also use interrupts to improve the operability.
+Firstly, you should change the defines INSIDE the button2.h library to:
+```
+#ifndef DEBOUNCE_MS
+  #define DEBOUNCE_MS 20
+#endif
+#ifndef LONGCLICK_MS
+  #define LONGCLICK_MS 500
+#endif
+``` 
+Defining it in the main .ino file did nothing at all for me, probably due to the Arduino IDE thing with the .ino files organization. This is closer to the parameters used in the video that I sadly lost.
 
 The DEMO video shows better the working flow.
 
