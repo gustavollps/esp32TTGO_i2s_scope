@@ -59,7 +59,7 @@ Firstly, you should change the defines INSIDE the button2.h library to:
   #define LONGCLICK_MS 500
 #endif
 ``` 
-Defining it in the main .ino file did nothing at all for me, probably due to the Arduino IDE thing with the .ino files organization. This is closer to the parameters used in the video that I sadly lost.
+Defining it in the main .ino file did nothing at all for me, probably due to the Arduino IDE thing with the .ino files organization. This is closer to the parameters used (that I sadly lost) in the DEMO video.
 
 The DEMO video shows better the working flow.
 
