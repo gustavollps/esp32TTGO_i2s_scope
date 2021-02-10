@@ -6,9 +6,6 @@
 #include <SPI.h>
 #include "esp_adc_cal.h"
 #include "filters.h"
-
-#define LONGCLICK_MS 1500
-
 #include <Button2.h>
 
 //#define DEBUG_SERIAL
