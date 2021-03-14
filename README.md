@@ -34,7 +34,7 @@ A simple 1Msps single-channel scope with the TFT display on the ESP32-TTGO.(http
 # Building
 
 First of all, you should have your IDE with the ESP32 support installed.
-Add the Button2 library and the TFT_eSPI library (By Bodmer) the ID and edit the library to work with the correct display as described below:
+Add the Button2 library and the TFT_eSPI library (By Bodmer) to the IDE, then edit the library to work with the correct display as described below:
 
 In the file `TFT_eSPI/User_Setup_Select.h` change the line:
 
