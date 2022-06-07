@@ -1,4 +1,4 @@
-esp32TTGO_i2s_scope
+esp32TTGO_i2s_scope (tested on core 1.0.5, not working with esp core 2.0.3)
 ====================
 DEMO VIDEO at https://youtu.be/4NNk67PA57Y
 
@@ -33,7 +33,7 @@ A simple 1Msps single-channel scope with the TFT display on the ESP32-TTGO.(http
 
 # Building
 
-First of all, you should have your IDE with the ESP32 support installed.
+First of all, you should have your IDE with the ESP32 support installed (tested on version esp core 1.0.6).
 Add the Button2 library and the TFT_eSPI library (By Bodmer) to the IDE, then edit the library to work with the correct display as described below:
 
 In the file `TFT_eSPI/User_Setup_Select.h` change the line:
